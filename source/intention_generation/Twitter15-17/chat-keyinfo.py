@@ -1,9 +1,79 @@
-import openai
+import glob
 import json
-import re
+import sys
 import time
-openai.api_base = 'https://api.closeai-proxy.xyz/v1'
-openai.api_key = 'sk-Y1Makaf6u43RXnCujsaKlOl7jCfu4W8I3kpOfaKIi6Z6qGDY'
+
+import numpy as np
+import openai
+from tqdm import tqdm
+
+sys.path.append('../')
+
+from key import *
+
+openai.api_key = weiqi_primary_key
+openai.api_base = "https://hkust.azure-api.net"
+openai.api_type = "azure"
+openai.api_version = "2023-05-15"
+model = "gpt-35-turbo"
+
+
+def generate_with_openai(prompt, system_prompt=None, max_tokens=100, temperature=0.5, top_p=1.0, retry_attempt=4,
+                         verbose=False):
+    if system_prompt:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+    else:
+        messages = [
+            {"role": "user", "content": prompt},
+        ]
+    retry_num = 0
+    generation_success = False
+    while retry_num < retry_attempt and not generation_success:
+        try:
+            gen = openai.ChatCompletion.create(
+                engine=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p
+            )
+            generation_success = True
+            total_tokens = gen['usage']['total_tokens']
+            if verbose:
+                # print total tokens
+                print("Total tokens: {}".format(total_tokens))
+        except openai.error.APIError as e:
+            if verbose:
+                print(e)
+            retry_num += 1
+            generation_success = False
+            time.sleep(1)
+        except openai.error.InvalidRequestError as e:
+            if verbose:
+                print(e)
+            retry_num += 1
+            generation_success = False
+            time.sleep(1)
+        except openai.error.APIConnectionError as e:
+            if verbose:
+                print(e)
+            retry_num += 1
+            generation_success = False
+            time.sleep(1)
+        except openai.error.RateLimitError as e:
+            if verbose:
+                print(e)
+            retry_num += 1
+            generation_success = False
+            time.sleep(30)
+    if generation_success:
+        return True, (gen['choices'][0]['message']['content'].strip(), total_tokens)
+    else:
+        return False, None
+
 
 def extract_information(text):
     # 初始化结果字典
@@ -29,9 +99,10 @@ def extract_information(text):
             result["keywords"] = line.replace("Keywords:", "").strip()
     return result
 
-def format_text(text,image_des,key_list):
-    #可以对prompt进行修改，引导模型生成更好的intention，目前每个样本生成5个intention
-    formatted_text = "Based on the below information, please describe the intention of why user to posted this information.Generate all intents possible.The information are as follows:\n"
+
+def format_text(text, image_des, key_list):
+    # 可以对prompt进行修改，引导模型生成更好的intention，目前每个样本生成5个intention
+    formatted_text = "Based on the information below, guess the intention of why the user post this information. Generate five different intentions if possible. The information is:\n"
     formatted_text += "Text: " + text + "\n"
     formatted_text += "Image description: " + image_des + "\n"
     formatted_text += "Concept: " + key_list["concept"] + ".\n"
@@ -39,12 +110,12 @@ def format_text(text,image_des,key_list):
     formatted_text += "Object: " + key_list["object"] + ".\n"
     formatted_text += "Emotion: " + key_list["emotion"] + ".\n"
     formatted_text += "Keywords: " + key_list["keywords"] + ".\n"
-    formatted_text += "Note: please describe it as brief as possible and make it universal."
-    # formatted_text += "Note: Please generate intention in JSON format!"
+    formatted_text += "You can think about the concepts, actions, object, emotions, and keywords. Make the intention human-centric, and formulate your answer as: Intention 1: To ...\nIntention 2: To ...\nIntention 3: To ...\nIntention 4: To ...\nIntention 5: To ..."
     return formatted_text
 
+
 def format_keyinfo(key_list):
-    #把关键信息保存下来
+    # 把关键信息保存下来
     formatted_text1 = ""
     formatted_text1 += "Concept: " + key_list["concept"] + ".\n"
     formatted_text1 += "Action: " + key_list["action"] + ".\n"
@@ -53,6 +124,7 @@ def format_keyinfo(key_list):
     formatted_text1 += "Keywords: " + key_list["keywords"] + ".\n"
     return formatted_text1
 
+
 def read_multi_line_json(file_path):
     with open(file_path, 'r') as file:
         json_data = []
@@ -60,64 +132,71 @@ def read_multi_line_json(file_path):
             json_data.append(json.loads(line))
     return json_data
 
+
+json_files = glob.glob('./*.json')
+
+TEST_MODE = False
+VERBOSE = False
 # 指定多行JSON文件的输入路径，可以根据文件的位置进行修改
-json_file_path = 'F:/Intention/llava_stage_two_keyinfo-prompt/eg.json'
+for json_file_path in json_files:
+    failed_generation_id = []
+    total_tokens_file = 0
+    # 读取多行JSON文件
+    data = read_multi_line_json(json_file_path)
+    if TEST_MODE:
+        data = data[:5]
+    # print(data)
+    # 打印读取的JSON数据
+    result = []
+    for item in tqdm(data, desc=json_file_path):
+        time.sleep(1)
+        text = item["prompt"]
+        # print(item["question_id"])
+        # print(text)
 
-# 读取多行JSON文件
-data = read_multi_line_json(json_file_path)
-# print(data)
-# 打印读取的JSON数据
-result = []
-for item in data:
-    time.sleep(1)
-    text = item["prompt"]
-    print(item["question_id"])
-    response = openai.ChatCompletion.create(
-      model="gpt-3.5-turbo",
-      messages=[
-        {"role": "system",
-         "content": "You are a chatbot,you should try your best to help users understand the purpose of posting"},
-        {"role": "user",
-         "content": text}
-      ]
-    )
-    response_out = response["choices"][-1]["message"]["content"]
-    # print(response_out)
-    zz = extract_information(response_out)
-    key_info_prompt_intention = format_text(item["text"],item["image_descrption"],zz)
-    key_info_save = format_keyinfo(zz)
-    json_data = {
-        "question_id": item["question_id"],
-        "text": item["text"],
-        "image_descrption":item["image_descrption"],
-        "prompt": key_info_prompt_intention}
-    # print(json)
-    response1 = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system",
-             "content": "You are a chatbot,you should try your best to help users understand the purpose of posting"},
-            {"role": "user",
-             "content": json_data["prompt"]}
-        ],
-        temperature=0.5
-    )
-    response_out1 = response1["choices"][-1]["message"]["content"]
-    json_data = {
-        "question_id": item["question_id"],
-        "image_id": item["image_id"],
-        "text": item["text"],
-        "image_descrption": item["image_descrption"],
-        "prompt": key_info_prompt_intention,
-        "keyinfo": key_info_save,
-        "intention": response_out1}
-    result.append(json_data)
-    #最终输出的路径，进行了二三步的处理，既保存了关键信息，有根据关键信息，把intention保存下来了（目前每个样本保存5个不同的intention）
-file_name = 'F:/Intention/llava_stage_two_keyinfo-prompt/eg8_out.json'
-with open(file_name, 'w') as json_file:
-    for item in result:
-        print(item["question_id"])
-        json.dump(item, json_file)
-        json_file.write('\n')  # 在对象之间添加换行符
-print(f"数据已保存到 {file_name}")
-
+        generation_status, keyword_generation = generate_with_openai(
+            text + " Formulate your answer as: Concept:\nAction:\nObject:\nEmotion:\nKeywords:\n", max_tokens=300,
+            retry_attempt=3,
+            verbose=VERBOSE)
+        if not generation_status:
+            failed_generation_id.append(item["question_id"])
+            continue
+        # print(response_out)
+        zz = extract_information(keyword_generation[0])
+        total_tokens_file += keyword_generation[1]
+        key_info_prompt_intention = format_text(item["text"], item["image_descrption"], zz)
+        key_info_save = format_keyinfo(zz)
+        json_data = {
+            "question_id": item["question_id"],
+            "text": item["text"],
+            "image_descrption": item["image_descrption"],
+            "prompt": key_info_prompt_intention}
+        # print(json)
+        generation_status_intention, intention_generation = generate_with_openai(json_data["prompt"], max_tokens=300,
+                                                                                 temperature=0.7, retry_attempt=3,
+                                                                                 verbose=VERBOSE)
+        if not generation_status_intention:
+            failed_generation_id.append(item["question_id"])
+            continue
+        total_tokens_file += intention_generation[1]
+        if TEST_MODE:
+            print(intention_generation[0])
+        json_data = {
+            "question_id": item["question_id"],
+            "image_id": item["image_id"],
+            "text": item["text"],
+            "image_descrption": item["image_descrption"],
+            "prompt": key_info_prompt_intention,
+            "keyinfo": key_info_save,
+            "intention": intention_generation[0]}
+        result.append(json_data)
+        # 最终输出的路径，进行了二三步的处理，既保存了关键信息，有根据关键信息，把intention保存下来了（目前每个样本保存5个不同的intention）
+    file_name = json_file_path.replace(".json", "_intention.json")
+    with open(file_name, 'w') as json_file:
+        for item in result:
+            print(item["question_id"])
+            json.dump(item, json_file)
+            json_file.write('\n')  # 在对象之间添加换行符
+    print(f"Generations saved into {file_name}")
+    print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
+    np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
