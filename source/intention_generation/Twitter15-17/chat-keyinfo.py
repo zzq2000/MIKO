@@ -132,11 +132,26 @@ def format_text(text, image_des, key_list):
 def format_keyinfo(key_list):
     # 把关键信息保存下来
     formatted_text1 = ""
-    formatted_text1 += "Concept: " + key_list["concept"] + ".\n"
-    formatted_text1 += "Action: " + key_list["action"] + ".\n"
-    formatted_text1 += "Object: " + key_list["object"] + ".\n"
-    formatted_text1 += "Emotion: " + key_list["emotion"] + ".\n"
-    formatted_text1 += "Keywords: " + key_list["keywords"] + ".\n"
+    try:
+        formatted_text1 += "Concept: " + key_list["concept"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text1 += "Action: " + key_list["action"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text1 += "Object: " + key_list["object"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text1 += "Emotion: " + key_list["emotion"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text1 += "Keywords: " + key_list["keywords"] + ".\n"
+    except:
+        pass
     return formatted_text1
 
 
