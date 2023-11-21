@@ -70,7 +70,10 @@ def generate_with_openai(prompt, system_prompt=None, max_tokens=100, temperature
             generation_success = False
             time.sleep(30)
     if generation_success:
-        return True, (gen['choices'][0]['message']['content'].strip(), total_tokens)
+        try:
+            return True, (gen['choices'][0]['message']['content'].strip(), total_tokens)
+        except:
+            return False, None
     else:
         return False, None
 
