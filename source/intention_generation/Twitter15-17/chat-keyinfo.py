@@ -105,11 +105,26 @@ def format_text(text, image_des, key_list):
     formatted_text = "Based on the information below, guess the intention of why the user post this information. Generate five different intentions if possible. The information is:\n"
     formatted_text += "Text: " + text + "\n"
     formatted_text += "Image description: " + image_des + "\n"
-    formatted_text += "Concept: " + key_list["concept"] + ".\n"
-    formatted_text += "Action: " + key_list["action"] + ".\n"
-    formatted_text += "Object: " + key_list["object"] + ".\n"
-    formatted_text += "Emotion: " + key_list["emotion"] + ".\n"
-    formatted_text += "Keywords: " + key_list["keywords"] + ".\n"
+    try:
+        formatted_text += "Concept: " + key_list["concept"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text += "Action: " + key_list["action"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text += "Object: " + key_list["object"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text += "Emotion: " + key_list["emotion"] + ".\n"
+    except:
+        pass
+    try:
+        formatted_text += "Keywords: " + key_list["keywords"] + ".\n"
+    except:
+        pass
     formatted_text += "You can think about the concepts, actions, object, emotions, and keywords. Make the intention human-centric, and formulate your answer as: Intention 1: To ...\nIntention 2: To ...\nIntention 3: To ...\nIntention 4: To ...\nIntention 5: To ..."
     return formatted_text
 
@@ -133,7 +148,7 @@ def read_multi_line_json(file_path):
     return json_data
 
 
-json_files = glob.glob('./*.json')
+json_files = glob.glob('./test*.json')
 
 TEST_MODE = False
 VERBOSE = False
