@@ -172,6 +172,8 @@ TEST_MODE = False
 VERBOSE = False
 # 指定多行JSON文件的输入路径，可以根据文件的位置进行修改
 for json_file_path in json_files:
+    if 'intention' in json_file_path:
+        continue
     failed_generation_id = []
     total_tokens_file = 0
     # 读取多行JSON文件
