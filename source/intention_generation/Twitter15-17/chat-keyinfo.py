@@ -103,9 +103,9 @@ def extract_information(text):
     return result
 
 
-def format_text(text, image_des, key_list):
+def format_text(text, image_des, key_list, relation):
     # 可以对prompt进行修改，引导模型生成更好的intention，目前每个样本生成5个intention
-    formatted_text = "Based on the information below, guess the intention of why the user post this information. Generate five different intentions if possible. The information is:\n"
+    formatted_text = "Based on the information below, guess the intention of why the user post this information. Generate one different intentions if possible. The information is:\n"
     formatted_text += "Text: " + text + "\n"
     formatted_text += "Image description: " + image_des + "\n"
     try:
@@ -128,7 +128,25 @@ def format_text(text, image_des, key_list):
         formatted_text += "Keywords: " + key_list["keywords"] + ".\n"
     except:
         pass
-    formatted_text += "You can think about the concepts, actions, object, emotions, and keywords. Make the intention human-centric, and formulate your answer as: Intention 1: To ...\nIntention 2: To ...\nIntention 3: To ...\nIntention 4: To ...\nIntention 5: To ..."
+    if relation == 'xWant':
+        formatted_text += "You can think about the concepts, actions, object, emotions, and keywords. Make the intention human-centric, and formulate your answer as: After this Tweet, the user wants to ..."
+    elif relation == 'oEffect':
+        pass
+    elif relation == 'xAttr':
+        # make this as open prompt
+        pass
+    elif relation == 'xIntent':
+        pass
+    elif relation == 'xReact':
+        pass
+    elif relation == 'oReact':
+        pass
+    elif relation == 'oWant':
+        pass
+    elif relation == 'xEffect':
+        pass
+    elif relation == 'xNeed':
+        pass
     return formatted_text
 
 
@@ -223,15 +241,18 @@ for json_file_path in json_files:
             "image_descrption": item["image_descrption"],
             "prompt": key_info_prompt_intention,
             "keyinfo": key_info_save,
-            "intention": intention_generation[0]}
+            "intention": intention_generation[0]}  # TODO: add relation here for future parsing
         result.append(json_data)
         # 最终输出的路径，进行了二三步的处理，既保存了关键信息，有根据关键信息，把intention保存下来了（目前每个样本保存5个不同的intention）
-    file_name = json_file_path.replace(".json", "_intention.json")
-    with open(file_name, 'w') as json_file:
-        for item in result:
-            print(item["question_id"])
-            json.dump(item, json_file)
-            json_file.write('\n')  # 在对象之间添加换行符
-    print(f"Generations saved into {file_name}")
-    print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
-    np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
+
+        # for every five percent of number of data, save the result
+        if len(result) % (len(data) // 20) == 0:
+            file_name = json_file_path.replace(".json", "_intention.json")
+            with open(file_name, 'w') as json_file:
+                for item in result:
+                    print(item["question_id"])
+                    json.dump(item, json_file)
+                    json_file.write('\n')  # 在对象之间添加换行符
+            print(f"Generations saved into {file_name}")
+            print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
+            np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
