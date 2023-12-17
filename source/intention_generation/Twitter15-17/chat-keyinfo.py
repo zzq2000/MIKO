@@ -197,7 +197,7 @@ for json_file_path in json_files:
     # 读取多行JSON文件
     data = read_multi_line_json(json_file_path)
     if TEST_MODE:
-        data = data[:5]
+        data = data[:20]
     # print(data)
     # 打印读取的JSON数据
     result = []
