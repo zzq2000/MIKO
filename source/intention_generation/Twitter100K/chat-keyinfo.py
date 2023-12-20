@@ -1,4 +1,3 @@
-import glob
 import json
 import sys
 import time
@@ -196,7 +195,9 @@ def read_multi_line_json(file_path):
     return json_data
 
 
-json_files = glob.glob('./answer-twitter100k1_keyinfo.json')
+# json_files = glob.glob('./answer-twitter100k1_keyinfo.json')
+json_files = ['./answer-twitter100k1_keyinfo.json', './answer-twitter100k2_keyinfo.json',
+              './answer-twitter100k3_keyinfo.json', './answer-twitter100k4_keyinfo.json']
 
 TEST_MODE = False
 VERBOSE = False
@@ -263,7 +264,7 @@ for json_file_path in json_files:
         if len(result) % (len(data) // 20) == 0:
             print("Saving generations into file..., total generations: {}".format(len(result))
                   + ", total tokens: {}".format(total_tokens_file))
-            file_name = json_file_path.replace(".json", "_intention.json")
+            file_name = json_file_path.replace(".json", "_intention{}.json".format(len(result) // (len(data) // 20)))
             with open(file_name, 'w') as json_file:
                 for item in result:
                     print(item["question_id"])
