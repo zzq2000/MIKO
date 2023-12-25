@@ -196,8 +196,7 @@ def read_multi_line_json(file_path):
 
 
 # json_files = glob.glob('./answer-twitter100k1_keyinfo.json')
-json_files = ['./answer-twitter100k1_keyinfo.json', './answer-twitter100k2_keyinfo.json',
-              './answer-twitter100k3_keyinfo.json', './answer-twitter100k4_keyinfo.json']
+json_files = ['./answer-twitter100k4_keyinfo.json']
 
 TEST_MODE = False
 VERBOSE = False
