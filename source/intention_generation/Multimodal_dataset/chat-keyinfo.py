@@ -1,4 +1,3 @@
-import glob
 import json
 import sys
 import time
@@ -196,12 +195,13 @@ def read_multi_line_json(file_path):
     return json_data
 
 
-json_files = glob.glob('./*.jsonl')
+# json_files = glob.glob('./answer-twitter100k1_keyinfo.json')
+json_files = ['./keyinfo_test1.jsonl', './keyinfo_train1.jsonl', './keyinfo_valid1.jsonl']
 
 TEST_MODE = False
 VERBOSE = False
 RELATION_LIST = ['xWant', 'oEffect', 'xAttr', 'xIntent', 'xReact', 'oReact', 'oWant', 'xEffect', 'xNeed']
-NUM_OF_TEST = 3  # number of example to test
+NUM_OF_TEST = 20  # number of example to test
 # 指定多行JSON文件的输入路径，可以根据文件的位置进行修改
 for json_file_path in json_files:
     if 'intention' in json_file_path:
@@ -215,7 +215,8 @@ for json_file_path in json_files:
     # print(data)
     # 打印读取的JSON数据
     result = []
-    for item in tqdm(data, desc=json_file_path):
+    progress_bar = tqdm(data, desc=json_file_path, total=len(data), postfix={'total_price': 0})
+    for item in data:
         time.sleep(1)
         text = item["prompt"]
         # print(item["question_id"])
@@ -223,7 +224,7 @@ for json_file_path in json_files:
 
         generation_status, keyword_generation = generate_with_openai(
             text + " Formulate your answer as: Concept:\nAction:\nObject:\nEmotion:\nKeywords:\n", max_tokens=300,
-            retry_attempt=3,
+            retry_attempt=4,
             verbose=VERBOSE)
         if not generation_status:
             failed_generation_id.append(item["question_id"])
@@ -240,7 +241,7 @@ for json_file_path in json_files:
             "prompt": key_info_prompt_intention}
         # print(json)
         generation_status_intention, intention_generation = generate_with_openai(json_data["prompt"], max_tokens=300,
-                                                                                 temperature=0.7, retry_attempt=3,
+                                                                                 temperature=0.7, retry_attempt=4,
                                                                                  verbose=VERBOSE)
         if not generation_status_intention:
             # append the failed generation id and corresponding relation
@@ -258,60 +259,18 @@ for json_file_path in json_files:
             "keyinfo": key_info_save,
             "intention": intention_generation[0]}
         result.append(json_data)
-    # for relation in RELATION_LIST:
-    #     key_info_prompt_intention = format_text(item["text"], item["image_descrption"], zz, relation)
-    #     key_info_save = format_keyinfo(zz)
-    #     json_data = {
-    #         "question_id": item["question_id"],
-    #         "text": item["text"],
-    #         "image_descrption": item["image_descrption"],
-    #         "prompt": key_info_prompt_intention}
-    #     # print(json)
-    #     generation_status_intention, intention_generation = generate_with_openai(json_data["prompt"], max_tokens=300,
-    #                                                                             temperature=0.7, retry_attempt=3,
-    #                                                                             verbose=VERBOSE)
-    #     if not generation_status_intention:
-    #         # append the failed generation id and corresponding relation
-    #         failed_generation_id.append(item["question_id"]+"_"+relation)
-    #         continue
-    #     total_tokens_file += intention_generation[1]
-    #     if TEST_MODE:
-    #         print(intention_generation[0])
-    #     json_data = {
-    #         "question_id": item["question_id"],
-    #         "image_id": item["image_id"],
-    #         "text": item["text"],
-    #         "image_descrption": item["image_descrption"],
-    #         "prompt": key_info_prompt_intention,
-    #         "keyinfo": key_info_save,
-    #         "intention": intention_generation[0],
-    #         "relation": relation}  # TODO: add relation here for future parsing
-    #     result.append(json_data)
-    # 最终输出的路径，进行了二三步的处理，既保存了关键信息，有根据关键信息，把intention保存下来了（目前每个样本保存5个不同的intention）
 
-    # for every five percent of number of data, save the result
-    # if len(result) % (len(data) // 20) == 0:
-    #     file_name = json_file_path.replace(".json", "_intention.json")
-    #     with open(file_name, 'w') as json_file:
-    #         for item in result:
-    #             print(item["question_id"])
-    #             json.dump(item, json_file)
-    #             json_file.write('\n')  # 在对象之间添加换行符
-    #     print(f"Generations saved into {file_name}")
-    #     print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
-    #     np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
-    if TEST_MODE:
-        file_name = json_file_path.replace(".json", "_test_intention.json")
-        with open(file_name, 'w') as json_file:
-            for item in result:
-                print(item["question_id"])
-                json.dump(item, json_file)
-                json_file.write('\n')  # 在对象之间添加换行符
-        print(f"Generations saved into {file_name}")
-        print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
-        # write them into a log txt
-        with open(json_file_path.replace(".jsonl", "_intention_generation_log.txt"), 'w') as log_file:
-            log_file.write("Total tokens: {}".format(total_tokens_file))
-            log_file.write("\n")
-            log_file.write("Failed generation id: {}".format(failed_generation_id))
-        np.save(json_file_path.replace(".json", "_test_failed_generation_id.npy"), failed_generation_id)
+        if len(result) % (len(data) // 20) == 0:
+            print("Saving generations into file..., total generations: {}".format(len(result))
+                  + ", total tokens: {}".format(total_tokens_file))
+            file_name = json_file_path.replace(".json", "_intention{}.json".format(len(result) // (len(data) // 20)))
+            with open(file_name, 'w') as json_file:
+                for item in result:
+                    print(item["question_id"])
+                    json.dump(item, json_file)
+                    json_file.write('\n')  # 在对象之间添加换行符
+            print(f"Generations saved into {file_name}")
+            print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
+            np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
+        progress_bar.update(1)
+        progress_bar.set_postfix({'total_price': total_tokens_file / 1000 * 0.002 * 7.8})
