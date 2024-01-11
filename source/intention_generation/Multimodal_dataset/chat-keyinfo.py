@@ -244,7 +244,7 @@ for json_file_path in json_files:
                                                                                  verbose=VERBOSE)
         if not generation_status_intention:
             # append the failed generation id and corresponding relation
-            failed_generation_id.append(item["question_id"] + "_" + relation)
+            failed_generation_id.append(item["question_id"])
             continue
         total_tokens_file += intention_generation[1]
         if TEST_MODE:
