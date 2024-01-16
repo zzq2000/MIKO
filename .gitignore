@@ -4,3 +4,6 @@
 /try1.py
 /try2.py
 /try3.py
+source/intention_generation/Multimodal_dataset/output/
+source/intention_generation/Multimodal_dataset/wandb/
+source/intention_generation/Multimodal_dataset/*.log
