@@ -1,3 +1,4 @@
+import glob
 import json
 import sys
 import time
@@ -17,7 +18,7 @@ openai.api_version = "2023-05-15"
 model = "gpt-35-turbo"
 
 
-def generate_with_openai(prompt, system_prompt=None, max_tokens=100, temperature=0.5, top_p=1.0, retry_attempt=4,
+def generate_with_openai(prompt, system_prompt=None, max_tokens=100, temperature=1, top_p=1.0, retry_attempt=10,
                          verbose=False):
     if system_prompt:
         messages = [
@@ -49,19 +50,19 @@ def generate_with_openai(prompt, system_prompt=None, max_tokens=100, temperature
                 print(e)
             retry_num += 1
             generation_success = False
-            time.sleep(1)
+            time.sleep(5)
         except openai.error.InvalidRequestError as e:
             if verbose:
                 print(e)
             retry_num += 1
             generation_success = False
-            time.sleep(1)
+            time.sleep(5)
         except openai.error.APIConnectionError as e:
             if verbose:
                 print(e)
             retry_num += 1
             generation_success = False
-            time.sleep(1)
+            time.sleep(5)
         except openai.error.RateLimitError as e:
             if verbose:
                 print(e)
@@ -196,7 +197,7 @@ def read_multi_line_json(file_path):
 
 
 # json_files = glob.glob('./answer-twitter100k1_keyinfo.json')
-json_files = ['./keyinfo_test1.jsonl', './keyinfo_train1.jsonl', './keyinfo_valid1.jsonl']
+json_files = glob.glob('./missing_data*.jsonl')
 
 TEST_MODE = False
 VERBOSE = False
@@ -260,17 +261,28 @@ for json_file_path in json_files:
             "intention": intention_generation[0]}
         result.append(json_data)
 
-        if len(result) % (len(data) // 20) == 0:
-            print("Saving generations into file..., total generations: {}".format(len(result))
-                  + ", total tokens: {}".format(total_tokens_file))
-            file_name = json_file_path.replace(".json", "_intention{}.json".format(len(result) // (len(data) // 20)))
-            with open(file_name, 'w') as json_file:
-                for item in result:
-                    print(item["question_id"])
-                    json.dump(item, json_file)
-                    json_file.write('\n')  # 在对象之间添加换行符
-            print(f"Generations saved into {file_name}")
-            print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
-            np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
+        # if len(result) % (len(data) // 20) == 0:
+        #     print("Saving generations into file..., total generations: {}".format(len(result))
+        #           + ", total tokens: {}".format(total_tokens_file))
+        #     file_name = json_file_path.replace(".json", "_intention{}.json".format(len(result) // (len(data) // 20)))
+        #     with open(file_name, 'w') as json_file:
+        #         for item in result:
+        #             print(item["question_id"])
+        #             json.dump(item, json_file)
+        #             json_file.write('\n')  # 在对象之间添加换行符
+        #     print(f"Generations saved into {file_name}")
+        #     print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
+        #     np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
         progress_bar.update(1)
         progress_bar.set_postfix({'total_price': total_tokens_file / 1000 * 0.002 * 7.8})
+
+        print("Saving generations into file..., total generations: {}".format(len(result))
+              + ", total tokens: {}".format(total_tokens_file))
+        file_name = json_file_path.replace(".json", "_intention_make_up.json")
+        with open(file_name, 'w') as json_file:
+            for item in result:
+                json.dump(item, json_file)
+                json_file.write('\n')  # 在对象之间添加换行符
+        print(f"Generations saved into {file_name}")
+        print("For file {}, total tokens: {}".format(json_file_path, total_tokens_file))
+        np.save(json_file_path.replace(".json", "_failed_generation_id.npy"), failed_generation_id)
