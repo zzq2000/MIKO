@@ -10,10 +10,11 @@ for ind, (data1, data2) in enumerate(
     data2_json = [json.loads(line) for line in open(data2, 'r')]
 
     total_data = data1_json + data2_json
-    if name_list == 'train':
+    if name_list[ind] == 'train':
         data3_json = [json.loads(line) for line in open('./missing_data_lost_intention_make_up.jsonl', 'r')]
         data4_json = [json.loads(line) for line in open('./lost_data_intention19.jsonl', 'r')]
         total_data = total_data + data3_json + data4_json
+        # print(len(data1_json), len(data2_json), len(data3_json), len(data4_json))
 
     # sort total_data according to item['question_id'] of each item in total_data
     total_data = sorted(total_data, key=lambda x: x['question_id'])
