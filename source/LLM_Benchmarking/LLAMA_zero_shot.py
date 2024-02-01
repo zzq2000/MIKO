@@ -21,9 +21,10 @@ prompt_list = [
     "The user post this tweet because"
 ]
 
-model_list = ["meta-llama/Llama-2-7b-chat-hf", "meta-llama/Llama-2-13b-chat-hf", "meta-llama/Llama-2-7b-hf",
-              "meta-llama/Llama-2-13b-hf", "tiiuae/falcon-7b-instruct",
-              "mistralai/Mistral-7B-Instruct-v0.2", "mistralai/Mistral-7B-Instruct-v0.1", "mistralai/Mistral-7B-v0.1"]
+model_list = ["tiiuae/falcon-7b-instruct",
+              "mistralai/Mistral-7B-Instruct-v0.2", "mistralai/Mistral-7B-Instruct-v0.1",
+              "meta-llama/Llama-2-13b-chat-hf", "mistralai/Mistral-7B-v0.1", "meta-llama/Llama-2-7b-hf",
+              "meta-llama/Llama-2-13b-hf", ]
 
 for ind, model in enumerate(model_list):
     generations = []
@@ -52,6 +53,7 @@ for ind, model in enumerate(model_list):
             # print(zero_shot_sequences[0]['generated_text'])
             d['generations']['Intention {}'.format(i + 1)] = zero_shot_sequences[0]['generated_text']
         generations.append(d)
-
-    with open('MIKO_benchmark_generation_{}.json'.format(model), 'w', encoding='utf-8') as f:
-        json.dump(generations, f, indent=4, ensure_ascii=False)
+        if len(generations) % 100 == 0:
+            with open('MIKO_benchmark_generation_{}_{}.json'.format(model.split('/')[-1], len(generations)), 'w',
+                      encoding='utf-8') as f:
+                json.dump(generations, f, indent=4, ensure_ascii=False)
